@@ -1,6 +1,10 @@
 import type { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
-import type { ServiceRequestListQuery } from '../schemas/service-request.schemas.js';
+import type {
+  ServiceRequestInput,
+  ServiceRequestListQuery,
+  ServiceRequestPatch,
+} from '../schemas/service-request.schemas.js';
 
 // Contract shape: foreign keys replaced by embedded summaries
 const withRelations = {
@@ -54,5 +58,17 @@ export const serviceRequestRepository = {
 
   findById(id: number) {
     return prisma.serviceRequest.findUnique({ ...withRelations, where: { id } });
+  },
+
+  create(input: ServiceRequestInput) {
+    return prisma.serviceRequest.create({ ...withRelations, data: input });
+  },
+
+  update(id: number, changes: ServiceRequestPatch) {
+    return prisma.serviceRequest.update({ ...withRelations, where: { id }, data: changes });
+  },
+
+  async remove(id: number): Promise<void> {
+    await prisma.serviceRequest.delete({ where: { id } });
   },
 };
