@@ -1,0 +1,35 @@
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--mat-sys-surface);
+}
+
+table {
+  width: 100%;
+}
+
+.title {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+}
+
+.status-trigger {
+  padding: 0 4px;
+}
+
+.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
