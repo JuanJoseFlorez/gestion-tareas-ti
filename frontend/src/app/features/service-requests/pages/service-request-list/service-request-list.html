@@ -2,9 +2,11 @@
   <header class="page-header">
     <div>
       <h2>Solicitudes de servicio</h2>
-      <p class="subtitle">
-        {{ store.meta().total }} {{ store.meta().total === 1 ? 'solicitud' : 'solicitudes' }}
-      </p>
+      @if (!(store.error() && store.requests().length === 0)) {
+        <p class="subtitle">
+          {{ store.meta().total }} {{ store.meta().total === 1 ? 'solicitud' : 'solicitudes' }}
+        </p>
+      }
     </div>
     <button mat-flat-button type="button" (click)="openCreate()">
       <mat-icon>add</mat-icon>
@@ -19,7 +21,13 @@
     (filtersChange)="store.setFilters($event)"
   />
 
-  @if (store.isEmpty()) {
+  @if (store.error() && store.requests().length === 0) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p role="alert">{{ store.error()!.message }}</p>
+      <button mat-stroked-button type="button" (click)="store.load()">Reintentar</button>
+    </div>
+  } @else if (store.isEmpty()) {
     <div class="empty-state">
       <mat-icon aria-hidden="true">inbox</mat-icon>
       <p>No hay solicitudes que coincidan con la búsqueda.</p>

@@ -42,7 +42,8 @@ function setup(dialogResult: unknown) {
     remove: vi.fn(() => of(undefined)),
   };
   const notifications = { success: vi.fn(), error: vi.fn() };
-  const dialog = { open: vi.fn(() => ({ afterClosed: () => of(dialogResult) })) };
+  const close = vi.fn();
+  const dialog = { open: vi.fn(() => ({ afterClosed: () => of(dialogResult), close })) };
   TestBed.configureTestingModule({
     imports: [ServiceRequestListPage],
     providers: [
@@ -53,7 +54,7 @@ function setup(dialogResult: unknown) {
     ],
   });
   const fixture = TestBed.createComponent(ServiceRequestListPage);
-  return { fixture, component: fixture.componentInstance, store, notifications, dialog };
+  return { fixture, component: fixture.componentInstance, store, notifications, dialog, close };
 }
 
 describe('ServiceRequestListPage', () => {
@@ -111,5 +112,53 @@ describe('ServiceRequestListPage', () => {
     store.error.set({ status: 0, code: 'NETWORK_ERROR', message: 'Sin conexión', details: [] });
     await fixture.whenStable();
     expect(notifications.error).toHaveBeenCalledWith('Sin conexión');
+  });
+
+  it('shows an error state with retry instead of "no results" when the load fails', async () => {
+    const { fixture, store } = setup(undefined);
+    store.requests.set([]);
+    store.isEmpty.set(true);
+    store.error.set({ status: 0, code: 'NETWORK_ERROR', message: 'Sin conexión', details: [] });
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('Sin conexión');
+    expect(el.textContent).not.toContain('No hay solicitudes');
+    const retry = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Reintentar'),
+    )!;
+    expect(retry).toBeTruthy();
+    retry.click();
+    expect(store.load).toHaveBeenCalledTimes(2);
+  });
+
+  it('closes the dialog, notifies and reloads when editing a request that no longer exists', async () => {
+    const { fixture, component, store, notifications, dialog, close } = setup(undefined);
+    await fixture.whenStable();
+    store.update.mockReturnValue(
+      throwError(() => ({ status: 404, code: 'NOT_FOUND', message: 'x', details: [] })),
+    );
+    component['openEdit'](row);
+    const data = (dialog.open.mock.calls[0] as unknown as [unknown, { data: any }])[1].data;
+    let failed = false;
+    data.save({}).subscribe({ error: () => (failed = true) });
+    expect(notifications.error).toHaveBeenCalledWith('La solicitud ya no existe.');
+    expect(store.load).toHaveBeenCalledTimes(2);
+    expect(close).toHaveBeenCalled();
+    expect(failed).toBe(true);
+  });
+
+  it('keeps the dialog open and silent on other edit errors', async () => {
+    const { fixture, component, store, notifications, dialog, close } = setup(undefined);
+    await fixture.whenStable();
+    store.update.mockReturnValue(
+      throwError(() => ({ status: 422, code: 'VALIDATION_ERROR', message: 'x', details: [] })),
+    );
+    component['openEdit'](row);
+    const data = (dialog.open.mock.calls[0] as unknown as [unknown, { data: any }])[1].data;
+    let failed = false;
+    data.save({}).subscribe({ error: () => (failed = true) });
+    expect(close).not.toHaveBeenCalled();
+    expect(notifications.error).not.toHaveBeenCalled();
+    expect(failed).toBe(true);
   });
 });

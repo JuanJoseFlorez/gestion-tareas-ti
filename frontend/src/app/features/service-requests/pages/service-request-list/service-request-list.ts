@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { Observable, catchError, filter, of, switchMap } from 'rxjs';
+import { Observable, catchError, filter, of, switchMap, throwError } from 'rxjs';
 import { AppError } from '../../../../core/models/api-error.model';
 import { NotificationService } from '../../../../core/services/notification.service';
 import {
@@ -117,26 +117,36 @@ export class ServiceRequestListPage {
     save: (input: ServiceRequestInput) => Observable<ServiceRequest>,
     successMessage: (saved: ServiceRequest) => string,
   ): void {
-    this.dialog
-      .open<ServiceRequestFormDialog, ServiceRequestFormDialogData, ServiceRequest>(
-        ServiceRequestFormDialog,
-        {
-          data: {
-            request,
-            technicians: this.technicians(),
-            serviceTypes: this.serviceTypes(),
-            save,
-          },
-          width: '720px',
-          maxWidth: '95vw',
-        },
-      )
-      .afterClosed()
-      .subscribe((saved) => {
-        if (saved) {
-          this.notifications.success(successMessage(saved));
-        }
-      });
+    // The request may have been deleted by someone else: close the dialog, notify and reload.
+    const guardedSave = (input: ServiceRequestInput): Observable<ServiceRequest> =>
+      save(input).pipe(
+        catchError((error: AppError) => {
+          if (error.code === 'NOT_FOUND') {
+            this.handleMutationError(error);
+            ref.close();
+          }
+          return throwError(() => error);
+        }),
+      );
+    const ref = this.dialog.open<
+      ServiceRequestFormDialog,
+      ServiceRequestFormDialogData,
+      ServiceRequest
+    >(ServiceRequestFormDialog, {
+      data: {
+        request,
+        technicians: this.technicians(),
+        serviceTypes: this.serviceTypes(),
+        save: guardedSave,
+      },
+      width: '720px',
+      maxWidth: '95vw',
+    });
+    ref.afterClosed().subscribe((saved) => {
+      if (saved) {
+        this.notifications.success(successMessage(saved));
+      }
+    });
   }
 
   private handleMutationError(error: AppError): void {
