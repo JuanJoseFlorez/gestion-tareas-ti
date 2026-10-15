@@ -24,4 +24,13 @@ describe('app shell', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
     expect(res.body.error.message).toBe('El cuerpo de la solicitud no es un JSON válido.');
   });
+
+  it('a JSON body over the size limit answers 413 VALIDATION_ERROR', async () => {
+    const res = await request(app)
+      .post('/api/v1/service-requests')
+      .set('Content-Type', 'application/json')
+      .send({ title: 'x'.repeat(200_000) });
+    expect(res.status).toBe(413);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });

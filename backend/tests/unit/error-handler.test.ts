@@ -59,4 +59,15 @@ describe('toHttpError', () => {
       body: { code: 'INTERNAL_ERROR', message: 'Ocurrió un error inesperado. Intenta de nuevo más tarde.' },
     });
   });
+
+  it.each([
+    ['entity.too.large', 413],
+    ['charset.unsupported', 415],
+  ])('maps body-parser %s errors to their 4xx status', (type, status) => {
+    const err = Object.assign(new Error('body parser'), { type, status, expose: true });
+    expect(toHttpError(err)).toEqual({
+      status,
+      body: { code: 'VALIDATION_ERROR', message: 'El cuerpo de la solicitud no es válido.' },
+    });
+  });
 });

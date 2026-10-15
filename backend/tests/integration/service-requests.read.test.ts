@@ -49,6 +49,7 @@ describe('GET /api/v1/service-requests', () => {
   it('treats LIKE wildcards in search literally', async () => {
     expect(titles(await request(app).get('/api/v1/service-requests?search=%25'))).toEqual(['Descuento 100% en licencias']);
     expect(titles(await request(app).get('/api/v1/service-requests?search=_'))).toEqual([]);
+    expect(titles(await request(app).get('/api/v1/service-requests?search=%5C'))).toEqual([]);
   });
 
   it('sorts by priority following the enum order', async () => {

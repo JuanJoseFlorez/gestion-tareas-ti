@@ -47,8 +47,8 @@ npm start            # http://localhost:4200
 ```bash
 docker compose --profile test up -d db-test   # PostgreSQL on port 5433
 
-cd backend && npm test
-cd frontend && npm test
+(cd backend && npm test)
+(cd frontend && npm test)
 ```
 
 ## Environment variables

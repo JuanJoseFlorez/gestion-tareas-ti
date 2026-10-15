@@ -10,9 +10,16 @@ interface HttpError {
 
 const CHECK_VIOLATION_SQLSTATE = '23514';
 
-// body-parser marks invalid JSON bodies with this type
-function isMalformedJson(err: unknown): boolean {
-  return err instanceof SyntaxError && 'type' in err && err.type === 'entity.parse.failed';
+// body-parser errors (invalid JSON, too large, unsupported charset...) are client errors that carry their own status
+interface BodyParserError extends Error {
+  type: string;
+  status: number;
+}
+
+function isBodyParserError(err: unknown): err is BodyParserError {
+  if (!(err instanceof Error)) return false;
+  const { type, status, expose } = err as Partial<BodyParserError> & { expose?: unknown };
+  return typeof type === 'string' && typeof status === 'number' && status >= 400 && status <= 499 && expose === true;
 }
 
 // With driver adapters Prisma reports CHECK violations as P2039 and keeps the SQLSTATE in meta
@@ -35,8 +42,10 @@ export function toHttpError(err: unknown): HttpError {
       },
     };
   }
-  if (isMalformedJson(err)) {
-    return { status: 400, body: { code: 'VALIDATION_ERROR', message: 'El cuerpo de la solicitud no es un JSON válido.' } };
+  if (isBodyParserError(err)) {
+    const message =
+      err.type === 'entity.parse.failed' ? 'El cuerpo de la solicitud no es un JSON válido.' : 'El cuerpo de la solicitud no es válido.';
+    return { status: err.status, body: { code: 'VALIDATION_ERROR', message } };
   }
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2025') {
