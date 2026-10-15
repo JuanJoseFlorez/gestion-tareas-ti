@@ -75,6 +75,11 @@ describe('serviceRequestInputSchema', () => {
     const errors = fieldErrors(serviceRequestInputSchema.safeParse({ ...validInput, technicianId: '3', serviceTypeId: '2' }));
     expect(Object.keys(errors).sort()).toEqual(['serviceTypeId', 'technicianId']);
   });
+
+  it('rejects ids above the PostgreSQL INTEGER limit', () => {
+    const errors = fieldErrors(serviceRequestInputSchema.safeParse({ ...validInput, serviceTypeId: 2147483648 }));
+    expect(Object.keys(errors)).toEqual(['serviceTypeId']);
+  });
 });
 
 describe('serviceRequestPatchSchema', () => {
@@ -118,6 +123,7 @@ describe('serviceRequestListQuerySchema', () => {
     for (const query of [
       { status: 'FOO' },
       { technicianId: '0' },
+      { technicianId: '2147483648' },
       { page: '0' },
       { pageSize: '101' },
       { sortBy: 'title' },
@@ -133,7 +139,7 @@ describe('serviceRequestListQuerySchema', () => {
 describe('idParamSchema', () => {
   it('coerces a positive integer id and rejects anything else', () => {
     expect(idParamSchema.parse({ id: '42' })).toEqual({ id: 42 });
-    for (const id of ['abc', '0', '-1', '1.5']) {
+    for (const id of ['abc', '0', '-1', '1.5', '2147483648']) {
       expect(idParamSchema.safeParse({ id }).success, id).toBe(false);
     }
   });

@@ -5,6 +5,9 @@ export const REQUEST_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELL
 export type RequestPriority = (typeof REQUEST_PRIORITIES)[number];
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
+// PostgreSQL INTEGER upper bound: larger ids make Prisma throw instead of matching nothing
+const MAX_INT4 = 2_147_483_647;
+
 const REQUIRED = 'Es obligatorio.';
 
 const requiredText = (max: number) =>
@@ -16,7 +19,7 @@ const requiredText = (max: number) =>
 
 // No coercion: ids in a JSON body must be real numbers
 const entityId = (message: string) =>
-  z.number({ error: message }).int({ error: message }).positive({ error: message });
+  z.number({ error: message }).int({ error: message }).positive({ error: message }).max(MAX_INT4, { error: message });
 
 /** Body of POST and PUT: every field is required (technicianId may be null = unassigned). */
 export const serviceRequestInputSchema = z.object({
@@ -43,7 +46,7 @@ export const serviceRequestPatchSchema = serviceRequestInputSchema
   .refine((changes) => Object.keys(changes).length > 0, { error: 'Debe enviar al menos un campo.' });
 export type ServiceRequestPatch = z.infer<typeof serviceRequestPatchSchema>;
 
-const queryId = z.coerce.number().int().positive();
+const queryId = z.coerce.number().int().positive().max(MAX_INT4);
 
 export const serviceRequestListQuerySchema = z.object({
   search: z
@@ -67,5 +70,6 @@ export const idParamSchema = z.object({
   id: z.coerce
     .number({ error: 'Debe ser un número entero positivo.' })
     .int({ error: 'Debe ser un número entero positivo.' })
-    .positive({ error: 'Debe ser un número entero positivo.' }),
+    .positive({ error: 'Debe ser un número entero positivo.' })
+    .max(MAX_INT4, { error: 'Debe ser un número entero positivo.' }),
 });

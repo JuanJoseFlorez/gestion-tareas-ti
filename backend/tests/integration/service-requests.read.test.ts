@@ -104,5 +104,8 @@ describe('GET /api/v1/service-requests/:id', () => {
     const invalid = await request(app).get('/api/v1/service-requests/abc');
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.details[0].field).toBe('id');
+    const tooBig = await request(app).get('/api/v1/service-requests/2147483648');
+    expect(tooBig.status).toBe(400);
+    expect(tooBig.body.error.details[0].field).toBe('id');
   });
 });
