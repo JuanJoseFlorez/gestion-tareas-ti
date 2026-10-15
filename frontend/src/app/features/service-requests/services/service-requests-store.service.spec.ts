@@ -2,7 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AppError } from '../../../core/models/api-error.model';
 import { PaginatedResponse } from '../../../core/models/paginated-response.model';
-import { EMPTY_FILTERS, ServiceRequest } from '../models/service-request.models';
+import {
+  EMPTY_FILTERS,
+  ServiceRequest,
+  ServiceRequestListQuery,
+} from '../models/service-request.models';
 import { ServiceRequestsApiService } from './service-requests-api.service';
 import { ServiceRequestsStore } from './service-requests-store.service';
 
@@ -39,7 +43,9 @@ describe('ServiceRequestsStore', () => {
 
   beforeEach(() => {
     api = {
-      list: vi.fn(() => of(page([request(1), request(2)]))),
+      list: vi.fn((query: ServiceRequestListQuery) =>
+        of(page([request(1), request(2)], { page: query.page, pageSize: query.pageSize })),
+      ),
       getById: vi.fn(),
       create: vi.fn(() => of(request(3))),
       replace: vi.fn(() => of(request(1))),

@@ -97,8 +97,7 @@ export class ServiceRequestsStore {
       return;
     }
     this.requests.set(data);
-    // pageSize is the user's choice; keep it even if a response echoes something else
-    this.meta.set({ ...meta, pageSize: this.meta().pageSize });
+    this.meta.set(meta);
     this.error.set(null);
     this.loading.set(false);
   }
