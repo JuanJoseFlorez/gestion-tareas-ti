@@ -1,0 +1,22 @@
+.app-toolbar {
+  gap: 12px;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+/* Fixed height so the layout does not jump when the bar appears */
+.progress-slot {
+  height: 4px;
+}
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}

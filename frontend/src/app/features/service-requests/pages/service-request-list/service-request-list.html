@@ -1,0 +1,73 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h2>Solicitudes de servicio</h2>
+      @if (!(store.error() && store.requests().length === 0)) {
+        <p class="subtitle">
+          {{ store.meta().total }} {{ store.meta().total === 1 ? 'solicitud' : 'solicitudes' }}
+        </p>
+      }
+    </div>
+    <div class="header-actions">
+      @if (catalogsFailed()) {
+        <div class="catalogs-notice" role="alert">
+          <span>No se pudieron cargar los catálogos.</span>
+          <button mat-stroked-button type="button" (click)="retryCatalogs()">Reintentar</button>
+        </div>
+      }
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="serviceTypes().length === 0"
+        (click)="openCreate()"
+      >
+        <mat-icon>add</mat-icon>
+        Nueva solicitud
+      </button>
+    </div>
+  </header>
+
+  <app-service-request-filters
+    [filters]="store.filters()"
+    [technicians]="technicians()"
+    [serviceTypes]="serviceTypes()"
+    (filtersChange)="store.setFilters($event)"
+  />
+
+  @if (store.error() && store.requests().length === 0) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <p role="alert">{{ store.error()!.message }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (store.isEmpty()) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">inbox</mat-icon>
+      <p>No hay solicitudes que coincidan con la búsqueda.</p>
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="serviceTypes().length === 0"
+        (click)="openCreate()"
+      >
+        Crear solicitud
+      </button>
+    </div>
+  } @else {
+    <app-service-request-table
+      [requests]="store.requests()"
+      [sort]="store.sort()"
+      (edit)="openEdit($event)"
+      (remove)="confirmDelete($event)"
+      (statusChange)="changeStatus($event)"
+      (sortChange)="store.setSort($event)"
+    />
+    <mat-paginator
+      [length]="store.meta().total"
+      [pageIndex]="store.meta().page - 1"
+      [pageSize]="store.meta().pageSize"
+      [pageSizeOptions]="[10, 25, 50]"
+      (page)="onPage($event)"
+    />
+  }
+</section>

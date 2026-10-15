@@ -1,0 +1,112 @@
+<div class="table-wrapper">
+  <table
+    mat-table
+    [dataSource]="requests()"
+    matSort
+    matSortDisableClear
+    [matSortActive]="sort().sortBy"
+    [matSortDirection]="sort().order"
+    (matSortChange)="onSortChange($event)"
+  >
+    <ng-container matColumnDef="id">
+      <th mat-header-cell *matHeaderCellDef>#</th>
+      <td mat-cell *matCellDef="let request">{{ request.id }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="title">
+      <th mat-header-cell *matHeaderCellDef>Solicitud</th>
+      <td mat-cell *matCellDef="let request">
+        <div class="title">{{ request.title }}</div>
+        <div class="muted">{{ request.requesterName }}</div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="serviceType">
+      <th mat-header-cell *matHeaderCellDef>Tipo de servicio</th>
+      <td mat-cell *matCellDef="let request">{{ request.serviceType.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="technician">
+      <th mat-header-cell *matHeaderCellDef>Técnico</th>
+      <td mat-cell *matCellDef="let request">
+        @if (request.technician; as technician) {
+          {{ technician.fullName }}
+          @if (!technician.isActive) {
+            <span class="muted">(inactivo)</span>
+          }
+        } @else {
+          <span class="muted">Sin asignar</span>
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="priority">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Prioridad</th>
+      <td mat-cell *matCellDef="let request">
+        <app-priority-badge [priority]="request.priority" />
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
+      <td mat-cell *matCellDef="let request">
+        <button
+          mat-button
+          type="button"
+          class="status-trigger"
+          [matMenuTriggerFor]="statusMenu"
+          [attr.aria-label]="
+            'Estado ' +
+            (request.status | statusLabel) +
+            '. Cambiar estado de la solicitud ' +
+            request.id
+          "
+        >
+          <app-status-badge [status]="request.status" />
+          <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #statusMenu="matMenu">
+          @for (status of statuses; track status) {
+            @if (status !== request.status) {
+              <button mat-menu-item type="button" (click)="statusChange.emit({ request, status })">
+                {{ status | statusLabel }}
+              </button>
+            }
+          }
+        </mat-menu>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Creada</th>
+      <td mat-cell *matCellDef="let request">{{ request.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Acciones</span></th>
+      <td mat-cell *matCellDef="let request" class="actions">
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="Editar"
+          [attr.aria-label]="'Editar solicitud ' + request.id"
+          (click)="edit.emit(request)"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="Eliminar"
+          [attr.aria-label]="'Eliminar solicitud ' + request.id"
+          (click)="remove.emit(request)"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+  </table>
+</div>
