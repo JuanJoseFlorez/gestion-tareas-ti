@@ -1,1 +1,83 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light;
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface);
+}
+
+.snackbar-success {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: var(--mat-sys-primary-container),
+      supporting-text-color: var(--mat-sys-on-primary-container),
+      button-color: var(--mat-sys-on-primary-container),
+    )
+  );
+}
+
+.snackbar-error {
+  @include mat.snack-bar-overrides(
+    (
+      container-color: var(--mat-sys-error-container),
+      supporting-text-color: var(--mat-sys-on-error-container),
+      button-color: var(--mat-sys-on-error-container),
+    )
+  );
+}
+
+/* Status / priority badges (shared/components) */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.badge--pending {
+  background: #fff3cd;
+  color: #7a5b00;
+}
+.badge--in_progress {
+  background: #d6e8ff;
+  color: #0b4a8f;
+}
+.badge--completed {
+  background: #d4f4dd;
+  color: #146c2e;
+}
+.badge--cancelled {
+  background: #e9e9ec;
+  color: #4a4a50;
+}
+.badge--low {
+  background: #e9e9ec;
+  color: #4a4a50;
+}
+.badge--medium {
+  background: #ffe8cc;
+  color: #8a4b00;
+}
+.badge--high {
+  background: #ffd9d6;
+  color: #a1150b;
+}
