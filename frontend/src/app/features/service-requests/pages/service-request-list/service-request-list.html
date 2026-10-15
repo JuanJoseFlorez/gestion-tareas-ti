@@ -1,0 +1,45 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h2>Solicitudes de servicio</h2>
+      <p class="subtitle">
+        {{ store.meta().total }} {{ store.meta().total === 1 ? 'solicitud' : 'solicitudes' }}
+      </p>
+    </div>
+    <button mat-flat-button type="button" (click)="openCreate()">
+      <mat-icon>add</mat-icon>
+      Nueva solicitud
+    </button>
+  </header>
+
+  <app-service-request-filters
+    [filters]="store.filters()"
+    [technicians]="technicians()"
+    [serviceTypes]="serviceTypes()"
+    (filtersChange)="store.setFilters($event)"
+  />
+
+  @if (store.isEmpty()) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">inbox</mat-icon>
+      <p>No hay solicitudes que coincidan con la búsqueda.</p>
+      <button mat-stroked-button type="button" (click)="openCreate()">Crear solicitud</button>
+    </div>
+  } @else {
+    <app-service-request-table
+      [requests]="store.requests()"
+      [sort]="store.sort()"
+      (edit)="openEdit($event)"
+      (remove)="confirmDelete($event)"
+      (statusChange)="changeStatus($event)"
+      (sortChange)="store.setSort($event)"
+    />
+    <mat-paginator
+      [length]="store.meta().total"
+      [pageIndex]="store.meta().page - 1"
+      [pageSize]="store.meta().pageSize"
+      [pageSizeOptions]="[10, 25, 50]"
+      (page)="onPage($event)"
+    />
+  }
+</section>
