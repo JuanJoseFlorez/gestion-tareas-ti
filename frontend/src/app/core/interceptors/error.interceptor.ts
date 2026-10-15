@@ -17,6 +17,10 @@ function isApiError(body: unknown): body is ApiError {
 
 export function toAppError(error: unknown): AppError {
   if (error instanceof HttpErrorResponse) {
+    // Network failures and backend 5xx are logged; 4xx are expected user-facing errors
+    if (error.status === 0 || error.status >= 500) {
+      console.error(error);
+    }
     if (error.status === 0) {
       return { status: 0, code: 'NETWORK_ERROR', message: NETWORK_MESSAGE, details: [] };
     }
@@ -24,11 +28,19 @@ export function toAppError(error: unknown): AppError {
       const { code, message, details } = error.error.error;
       return { status: error.status, code, message, details: details ?? [] };
     }
+    // Not an API error (proxy page, bug): log it (unless already logged above), show a generic message
+    if (error.status < 500) {
+      console.error(error);
+    }
+    return {
+      status: error.status,
+      code: 'INTERNAL_ERROR',
+      message: UNEXPECTED_MESSAGE,
+      details: [],
+    };
   }
-  // Not an API error (proxy page, bug): log it, show a generic message
   console.error(error);
-  const status = error instanceof HttpErrorResponse ? error.status : 0;
-  return { status, code: 'INTERNAL_ERROR', message: UNEXPECTED_MESSAGE, details: [] };
+  return { status: 0, code: 'INTERNAL_ERROR', message: UNEXPECTED_MESSAGE, details: [] };
 }
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>
