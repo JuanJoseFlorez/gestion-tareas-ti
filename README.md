@@ -23,7 +23,7 @@ docker compose --profile full up --build
 - App: http://localhost:8080
 - API: http://localhost:3000/api/v1/health
 
-Migrations are applied automatically when the API container starts.
+Migrations and seed data (technicians, service types, sample requests) are applied automatically when the API container starts.
 
 ## Local development
 
@@ -34,11 +34,21 @@ docker compose up -d db
 cd backend
 npm install
 npx prisma migrate dev
+npm run db:seed
 npm run dev          # http://localhost:3000
 
 cd ../frontend
 npm install
 npm start            # http://localhost:4200
+```
+
+## Tests
+
+```bash
+docker compose --profile test up -d db-test   # PostgreSQL on port 5433
+
+(cd backend && npm test)
+(cd frontend && npm test)
 ```
 
 ## Environment variables

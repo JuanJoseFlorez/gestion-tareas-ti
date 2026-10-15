@@ -14,5 +14,5 @@ COPY prisma.config.ts ./
 COPY prisma ./prisma
 COPY --from=build /app/dist ./dist
 EXPOSE 3000
-# Apply pending migrations, then start the API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Apply pending migrations, load idempotent seed data, then start the API
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/seed.js && node dist/server.js"]
