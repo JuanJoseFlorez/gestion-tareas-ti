@@ -1,10 +1,9 @@
-import { Component, effect, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { Observable, catchError, filter, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, filter, forkJoin, switchMap, throwError } from 'rxjs';
 import { AppError } from '../../../../core/models/api-error.model';
 import { NotificationService } from '../../../../core/services/notification.service';
 import {
@@ -44,25 +43,25 @@ export class ServiceRequestListPage {
   private readonly dialog = inject(MatDialog);
   private readonly notifications = inject(NotificationService);
 
-  protected readonly technicians = toSignal(
-    this.catalogs.technicians$.pipe(catchError(() => this.catalogFailed<Technician>())),
-    {
-      initialValue: [],
-    },
-  );
-  protected readonly serviceTypes = toSignal(
-    this.catalogs.serviceTypes$.pipe(catchError(() => this.catalogFailed<ServiceType>())),
-    { initialValue: [] },
-  );
+  protected readonly technicians = signal<Technician[]>([]);
+  protected readonly serviceTypes = signal<ServiceType[]>([]);
 
   constructor() {
     this.store.load();
+    this.loadCatalogs();
     effect(() => {
       const error = this.store.error();
       if (error) {
         this.notifications.error(error.message);
       }
     });
+  }
+
+  protected retry(): void {
+    this.store.load();
+    if (this.serviceTypes().length === 0) {
+      this.loadCatalogs();
+    }
   }
 
   protected openCreate(): void {
@@ -158,10 +157,19 @@ export class ServiceRequestListPage {
     this.notifications.error(error.message);
   }
 
-  private catalogFailed<T>(): Observable<T[]> {
-    this.notifications.error(
-      'No se pudieron cargar los catálogos. Recarga la página para intentarlo de nuevo.',
-    );
-    return of([]);
+  private loadCatalogs(): void {
+    forkJoin({
+      technicians: this.catalogs.technicians$,
+      serviceTypes: this.catalogs.serviceTypes$,
+    }).subscribe({
+      next: ({ technicians, serviceTypes }) => {
+        this.technicians.set(technicians);
+        this.serviceTypes.set(serviceTypes);
+      },
+      error: () =>
+        this.notifications.error(
+          'No se pudieron cargar los catálogos. Usa "Reintentar" o recarga la página.',
+        ),
+    });
   }
 }

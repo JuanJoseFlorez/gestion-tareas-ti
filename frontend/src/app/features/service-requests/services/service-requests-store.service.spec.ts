@@ -114,6 +114,12 @@ describe('ServiceRequestsStore', () => {
     expect(store.meta().page).toBe(2);
   });
 
+  it('does not re-request the same page when an empty page is not beyond totalPages', () => {
+    api.list.mockReturnValue(of(page([], { page: 2, total: 0, totalPages: 2 })));
+    store.setPage(2, 10);
+    expect(api.list).toHaveBeenCalledTimes(1);
+  });
+
   it('stores the error and stops loading when the list fails', () => {
     const error: AppError = {
       status: 0,

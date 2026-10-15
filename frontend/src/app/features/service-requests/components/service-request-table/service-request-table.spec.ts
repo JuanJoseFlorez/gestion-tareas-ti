@@ -80,7 +80,7 @@ describe('ServiceRequestTable', () => {
     component.statusChange.subscribe((e) => changes.push(e));
     (
       element.querySelector(
-        'button[aria-label="Cambiar estado de la solicitud 1"]',
+        'button[aria-label$="Cambiar estado de la solicitud 1"]',
       ) as HTMLButtonElement
     ).click();
     await fixture.whenStable();

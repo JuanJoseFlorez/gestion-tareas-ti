@@ -91,7 +91,7 @@ export class ServiceRequestsStore {
     }
     const { data, meta } = result.response;
     // e.g. the last row of the last page was deleted: jump to the last page that still exists
-    if (data.length === 0 && meta.page > 1) {
+    if (data.length === 0 && meta.page > 1 && meta.page > meta.totalPages) {
       this.meta.set({ ...meta, page: Math.max(1, meta.totalPages) });
       this.load();
       return;

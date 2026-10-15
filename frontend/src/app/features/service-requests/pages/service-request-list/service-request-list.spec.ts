@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { of, throwError } from 'rxjs';
+import { defer, of, throwError } from 'rxjs';
 import { AppError } from '../../../../core/models/api-error.model';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { CatalogsService } from '../../../catalogs/services/catalogs.service';
@@ -23,7 +23,9 @@ const row: ServiceRequest = {
   updatedAt: '2026-10-14T10:00:00.000Z',
 };
 
-function setup(dialogResult: unknown) {
+const serviceType = { id: 1, name: 'Soporte de Red', description: null, isActive: true };
+
+function setup(dialogResult: unknown, catalogs?: Partial<CatalogsService>) {
   const store = {
     requests: signal([row]),
     meta: signal({ page: 1, pageSize: 10, total: 1, totalPages: 1 }),
@@ -48,7 +50,10 @@ function setup(dialogResult: unknown) {
     imports: [ServiceRequestListPage],
     providers: [
       { provide: ServiceRequestsStore, useValue: store },
-      { provide: CatalogsService, useValue: { technicians$: of([]), serviceTypes$: of([]) } },
+      {
+        provide: CatalogsService,
+        useValue: catalogs ?? { technicians$: of([]), serviceTypes$: of([serviceType]) },
+      },
       { provide: NotificationService, useValue: notifications },
       { provide: MatDialog, useValue: dialog },
     ],
@@ -160,5 +165,32 @@ describe('ServiceRequestListPage', () => {
     expect(close).not.toHaveBeenCalled();
     expect(notifications.error).not.toHaveBeenCalled();
     expect(failed).toBe(true);
+  });
+
+  it('notifies once when the catalogs fail and loads them again on retry', async () => {
+    let attempt = 0;
+    const failOnce = <T>(value: T) =>
+      defer(() => (attempt === 0 ? throwError(() => new Error('down')) : of(value)));
+    const { fixture, store, notifications } = setup(undefined, {
+      technicians$: failOnce([]),
+      serviceTypes$: failOnce([serviceType]),
+    });
+    store.requests.set([]);
+    store.isEmpty.set(true);
+    store.error.set({ status: 0, code: 'NETWORK_ERROR', message: 'Sin conexión', details: [] });
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    const button = (text: string) =>
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(text))!;
+    const catalogErrors = () =>
+      notifications.error.mock.calls.filter(([m]) => String(m).includes('catálogos'));
+    expect(catalogErrors()).toHaveLength(1);
+    expect(button('Nueva solicitud').disabled).toBe(true);
+    attempt = 1;
+    button('Reintentar').click();
+    await fixture.whenStable();
+    expect(store.load).toHaveBeenCalledTimes(2);
+    expect(button('Nueva solicitud').disabled).toBe(false);
+    expect(catalogErrors()).toHaveLength(1);
   });
 });

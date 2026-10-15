@@ -151,10 +151,16 @@ export class ServiceRequestFormDialog {
       return;
     }
     this.submitting.set(true);
+    this.dialogRef.disableClose = true;
     this.serverError.set(null);
     this.data
       .save(this.toInput())
-      .pipe(finalize(() => this.submitting.set(false)))
+      .pipe(
+        finalize(() => {
+          this.submitting.set(false);
+          this.dialogRef.disableClose = false;
+        }),
+      )
       .subscribe({
         next: (saved) => this.dialogRef.close(saved),
         error: (error: AppError) => this.applyServerError(error),

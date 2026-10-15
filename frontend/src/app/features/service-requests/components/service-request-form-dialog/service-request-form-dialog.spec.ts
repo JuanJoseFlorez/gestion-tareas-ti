@@ -33,6 +33,7 @@ const existing: ServiceRequest = {
 
 async function setup(overrides: Partial<ServiceRequestFormDialogData> = {}) {
   const close = vi.fn();
+  const dialogRef = { close, disableClose: false };
   const data: ServiceRequestFormDialogData = {
     request: null,
     technicians,
@@ -44,12 +45,12 @@ async function setup(overrides: Partial<ServiceRequestFormDialogData> = {}) {
     imports: [ServiceRequestFormDialog],
     providers: [
       { provide: MAT_DIALOG_DATA, useValue: data },
-      { provide: MatDialogRef, useValue: { close } },
+      { provide: MatDialogRef, useValue: dialogRef },
     ],
   });
   const fixture = TestBed.createComponent(ServiceRequestFormDialog);
   await fixture.whenStable();
-  return { fixture, component: fixture.componentInstance, data, close };
+  return { fixture, component: fixture.componentInstance, data, close, dialogRef };
 }
 
 function fillValid(component: ServiceRequestFormDialog) {
@@ -163,5 +164,31 @@ describe('ServiceRequestFormDialog', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'La solicitud no se puede asignar con los datos enviados.',
     );
+  });
+
+  it('blocks closing while saving and releases it after a failure', async () => {
+    const pending = new Subject<ServiceRequest>();
+    const { component, dialogRef } = await setup({ save: vi.fn(() => pending.asObservable()) });
+    fillValid(component);
+    component.submit();
+    expect(dialogRef.disableClose).toBe(true);
+    pending.error({ status: 500, code: 'NETWORK_ERROR', message: 'boom', details: [] } as AppError);
+    expect(dialogRef.disableClose).toBe(false);
+  });
+
+  it('disables the save button when invalid, enables it when valid and disables it while saving', async () => {
+    const pending = new Subject<ServiceRequest>();
+    const { component, fixture } = await setup({ save: vi.fn(() => pending.asObservable()) });
+    const button = () =>
+      (fixture.nativeElement as HTMLElement).querySelector(
+        'button[type=submit]',
+      ) as HTMLButtonElement;
+    expect(button().disabled).toBe(true);
+    fillValid(component);
+    await fixture.whenStable();
+    expect(button().disabled).toBe(false);
+    component.submit();
+    await fixture.whenStable();
+    expect(button().disabled).toBe(true);
   });
 });

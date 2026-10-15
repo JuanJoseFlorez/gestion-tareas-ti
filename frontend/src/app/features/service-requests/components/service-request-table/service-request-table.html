@@ -55,7 +55,12 @@
           type="button"
           class="status-trigger"
           [matMenuTriggerFor]="statusMenu"
-          [attr.aria-label]="'Cambiar estado de la solicitud ' + request.id"
+          [attr.aria-label]="
+            'Estado ' +
+            (request.status | statusLabel) +
+            '. Cambiar estado de la solicitud ' +
+            request.id
+          "
         >
           <app-status-badge [status]="request.status" />
           <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
