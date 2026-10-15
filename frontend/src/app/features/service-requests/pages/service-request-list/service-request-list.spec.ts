@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { defer, of, throwError } from 'rxjs';
+import { Subject, defer, of, throwError } from 'rxjs';
 import { AppError } from '../../../../core/models/api-error.model';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { CatalogsService } from '../../../catalogs/services/catalogs.service';
@@ -181,7 +181,9 @@ describe('ServiceRequestListPage', () => {
     await fixture.whenStable();
     const el: HTMLElement = fixture.nativeElement;
     const button = (text: string) =>
-      Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(text))!;
+      Array.from(el.querySelectorAll('button'))
+        .filter((b) => b.textContent?.includes(text))
+        .at(-1)!;
     const catalogErrors = () =>
       notifications.error.mock.calls.filter(([m]) => String(m).includes('catálogos'));
     expect(catalogErrors()).toHaveLength(1);
@@ -192,5 +194,55 @@ describe('ServiceRequestListPage', () => {
     expect(store.load).toHaveBeenCalledTimes(2);
     expect(button('Nueva solicitud').disabled).toBe(false);
     expect(catalogErrors()).toHaveLength(1);
+  });
+
+  it('shows a catalog retry control when only the catalogs fail', async () => {
+    let attempt = 0;
+    let subscriptions = 0;
+    const failOnce = <T>(value: T) =>
+      defer(() => {
+        subscriptions++;
+        return attempt === 0 ? throwError(() => new Error('down')) : of(value);
+      });
+    const { fixture, notifications } = setup(undefined, {
+      technicians$: failOnce([]),
+      serviceTypes$: failOnce([serviceType]),
+    });
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    const header = () => el.querySelector('.page-header') as HTMLElement;
+    const button = (text: string) =>
+      Array.from(header().querySelectorAll('button')).find((b) => b.textContent?.includes(text))!;
+    const catalogErrors = () =>
+      notifications.error.mock.calls.filter(([m]) => String(m).includes('catálogos'));
+    expect(header().querySelector('[role="alert"]')?.textContent).toContain(
+      'No se pudieron cargar los catálogos.',
+    );
+    expect(button('Nueva solicitud').disabled).toBe(true);
+    const before = subscriptions;
+    attempt = 1;
+    button('Reintentar').click();
+    await fixture.whenStable();
+    expect(subscriptions).toBeGreaterThan(before);
+    expect(header().querySelector('[role="alert"]')).toBeNull();
+    expect(button('Nueva solicitud').disabled).toBe(false);
+    expect(catalogErrors()).toHaveLength(1);
+  });
+
+  it('ignores catalog retries while a load is in flight', async () => {
+    const technicians = new Subject<never[]>();
+    let subscriptions = 0;
+    const { fixture, component } = setup(undefined, {
+      technicians$: defer(() => {
+        subscriptions++;
+        return technicians;
+      }),
+      serviceTypes$: of([serviceType]),
+    });
+    await fixture.whenStable();
+    expect(subscriptions).toBe(1);
+    component['retryCatalogs']();
+    component['retryCatalogs']();
+    expect(subscriptions).toBe(1);
   });
 });

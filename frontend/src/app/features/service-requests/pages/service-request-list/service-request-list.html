@@ -8,15 +8,23 @@
         </p>
       }
     </div>
-    <button
-      mat-flat-button
-      type="button"
-      [disabled]="serviceTypes().length === 0"
-      (click)="openCreate()"
-    >
-      <mat-icon>add</mat-icon>
-      Nueva solicitud
-    </button>
+    <div class="header-actions">
+      @if (catalogsFailed()) {
+        <div class="catalogs-notice" role="alert">
+          <span>No se pudieron cargar los catálogos.</span>
+          <button mat-stroked-button type="button" (click)="retryCatalogs()">Reintentar</button>
+        </div>
+      }
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="serviceTypes().length === 0"
+        (click)="openCreate()"
+      >
+        <mat-icon>add</mat-icon>
+        Nueva solicitud
+      </button>
+    </div>
   </header>
 
   <app-service-request-filters

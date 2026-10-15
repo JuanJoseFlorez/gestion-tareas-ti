@@ -18,6 +18,20 @@
   }
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.catalogs-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mat-sys-error);
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

@@ -45,6 +45,8 @@ export class ServiceRequestListPage {
 
   protected readonly technicians = signal<Technician[]>([]);
   protected readonly serviceTypes = signal<ServiceType[]>([]);
+  protected readonly catalogsFailed = signal(false);
+  private catalogsLoading = false;
 
   constructor() {
     this.store.load();
@@ -62,6 +64,10 @@ export class ServiceRequestListPage {
     if (this.serviceTypes().length === 0) {
       this.loadCatalogs();
     }
+  }
+
+  protected retryCatalogs(): void {
+    this.loadCatalogs();
   }
 
   protected openCreate(): void {
@@ -158,18 +164,27 @@ export class ServiceRequestListPage {
   }
 
   private loadCatalogs(): void {
+    if (this.catalogsLoading) {
+      return;
+    }
+    this.catalogsLoading = true;
+    this.catalogsFailed.set(false);
     forkJoin({
       technicians: this.catalogs.technicians$,
       serviceTypes: this.catalogs.serviceTypes$,
     }).subscribe({
       next: ({ technicians, serviceTypes }) => {
+        this.catalogsLoading = false;
         this.technicians.set(technicians);
         this.serviceTypes.set(serviceTypes);
       },
-      error: () =>
+      error: () => {
+        this.catalogsLoading = false;
+        this.catalogsFailed.set(true);
         this.notifications.error(
-          'No se pudieron cargar los catálogos. Usa "Reintentar" o recarga la página.',
-        ),
+          'No se pudieron cargar los catálogos. Usa "Reintentar" para intentarlo de nuevo.',
+        );
+      },
     });
   }
 }
